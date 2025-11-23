@@ -86,13 +86,13 @@ void crypt(string dname, string kname, bool en){
         if(en){ //bullshit ass encryption i dont even know how reversing it works exactly
             c ^= (pref[ki]+suf[ki])%ALPHADIF;
             c = (c - ALPHAMIN + ALPHADIF)%ALPHADIF;
-            c += (suf[ki]*pref[ki] + (unsigned int)(i*i))%ALPHADIF;
+            c += ((suf[ki]*pref[ki])%ALPHADIF + (unsigned int)(i*i)%ALPHADIF)%ALPHADIF;
             c %= ALPHADIF;
             c += ALPHAMIN;
         }
         else{
             c -= ALPHAMIN;
-            c = (c - (pref[ki]*suf[ki] + (unsigned int)(i*i))%ALPHADIF + ALPHADIF) % ALPHADIF;
+            c = (c - ((suf[ki]*pref[ki])%ALPHADIF + (unsigned int)(i*i)%ALPHADIF)%ALPHADIF + ALPHADIF) % ALPHADIF;
             c ^= (pref[ki]+suf[ki])%ALPHADIF;
             c += ALPHAMIN;
         }
