@@ -2,8 +2,8 @@
 In progress
 
 Current commands:
-new (file)
+new
 delete
-open
-copy
 merge
+encrypt/decrypt
+exit
