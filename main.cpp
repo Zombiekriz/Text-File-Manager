@@ -61,47 +61,79 @@ void open_file(string name){
 #endif
 }
 
-void take_input(){
-    cout << "> ";
-    string modified,equals,op; //name of modified file, equal sign (sometimes different)
-    cin >> modified >> equals;
+const int TXT = 1, EXE = 2, NOTYPE=0;
+int file_type(string &s){
+    if(s.size()<4) return NOTYPE;
+    string type = s.substr(s.size()-4,4);
+    if(type == ".txt") return TXT;
+    if(type == ".exe") return EXE;
+    return NOTYPE;
+}
 
-    //exceptions
-    if(modified == "open"){
-        open_file(equals);
-        return;
+void take_input(vector<string> &v){
+    cout << "> ";
+    string line,word="";
+    getline(cin,line);
+    for(char c: line){
+        if(isspace(c)) {v.push_back(word); word = "";}
+        else word += tolower(c);
     }
-    else if(modified == "new" || modified == "clear"){
-        writeto(equals,"");
-        return;
-    }
-    else if(modified == "delete" || modified == "kill"){
-        if(!fs::remove(equals)) throw_error("FILE NOT FOUND");
-    }
-    else{
-        cin >> op; //operation
-        lowercase(op);
-        if(op == "new" || op == "clear")
-            writeto(modified,"");
-        else if(op == "delete" || op == "kill"){
-            if(!fs::remove(modified)) throw_error("FILE NOT FOUND");
+    if(!isspace(line.back())) v.push_back(word);
+}
+
+string fromv(vector<string> &v, int index){
+    if(index >= v.size()) {throw_error("INCOMPLETE LOGIC"); return "";}
+    else return v[index];
+}
+
+void process_input(){
+    vector<string> v;
+    take_input(v);
+    if(fromv(v,0).empty()) return;
+
+    if(file_type(v[0]) == EXE) throw_error("INVALID LOGIC");
+    else if(file_type(v[0]) == NOTYPE){ //shortcuts
+        if(v[0] == "exit") exit(0);
+
+        if(fromv(v,1).empty()) return;
+        if(v[0] == "new" || v[0] == "create" || v[0] == "clear"){
+            if(file_type(v[1]) != TXT) {throw_error("WRONG FILE TYPE"); return;}
+            writeto(v[1],"");
         }
-        else if(op == "open") open_file(modified);
-        else if(op == "merge"){
-            string name1, name2;
-            cin >> name1 >> name2;
-            writeto(modified, readfrom(name1) + readfrom(name2));
+        else if(v[0] == "kill" || v[0] == "delete"){
+            if(file_type(v[1]) != TXT) {throw_error("WRONG FILE TYPE"); return;}
+            if(!fs::remove(v[1])) throw_error("FILE NOT FOUND");
         }
-        else if(op == "copy"){
-            string name;
-            cin >> name;
-            writeto(modified, readfrom(name));
+        else if(v[0] == "open"){
+            if(file_type(v[1]) != TXT) {throw_error("WRONG FILE TYPE"); return;}
+            open_file(v[1]);
         }
         else throw_error("UNKNOWN COMMAND");
     }
-    cin.ignore();
+    else if(file_type(v[0]) == TXT){
+        if(fromv(v,1).empty()) return;
+        if(v[1] != "=") {throw_error("INVALID LOGIC"); return;}
+
+        if(fromv(v,2).empty()) return;
+        if(file_type(v[2]) == TXT) writeto(v[0],readfrom(v[2]));
+        else{
+            if(v[2] == "new" || v[2] == "create" || v[3] == "clear")
+                writeto(v[0],"");
+            else if(v[2] == "kill" || v[2] == "delete"){
+                if(!fs::remove(v[0])) throw_error("FILE NOT FOUND");
+            }
+            else if(v[2] == "open")
+                open_file(v[0]);
+            else if(v[2] == "merge" || v[2] == "+"){
+                if(fromv(v,4).empty()) return;
+                if(file_type(v[3]) != TXT || file_type(v[4]) != TXT) {throw_error("WRONG FILE TYPE"); return;}
+                writeto(v[0], readfrom(v[3])+readfrom(v[4]));
+            }
+            else throw_error("UNKNOWN COMMAND");
+        }
+    }
 }
 
 int main(){
-    while(true) take_input();
+    while(true) process_input();
 }
