@@ -70,6 +70,37 @@ int file_type(string &s){
     return NOTYPE;
 }
 
+const int ALPHAMIN = 32, ALPHAMAX = 127, ALPHADIF = ALPHAMAX-ALPHAMIN+1;
+void crypt(string dname, string kname, bool en){
+    string content = readfrom(dname), key = readfrom(kname);
+    vector<int> pref(key.size()), suf(key.size());
+    pref[0] = key[0];
+    suf[key.size()-1] = key.back();
+    for(int i=1;i<key.size();i++){
+        pref[i] = (pref[i-1]+key[i])%(ALPHADIF);
+        suf[key.size()-i-1] = (suf[key.size()-i]+key[key.size()-i-1])%(ALPHADIF);
+     }
+    for(int i=0;i<content.size();i++){
+        if(content[i]=='\n') continue;
+        int ki = i%key.size(), c = content[i];
+        if(en){ //bullshit ass encryption i dont even know how reversing it works exactly
+            c ^= (pref[ki]+suf[ki])%ALPHADIF;
+            c = (c - ALPHAMIN + ALPHADIF)%ALPHADIF;
+            c += (suf[ki]*pref[ki])%ALPHADIF;
+            c %= ALPHADIF;
+            c += ALPHAMIN;
+        }
+        else{
+            c -= ALPHAMIN;
+            c = (c - (pref[ki]*suf[ki])%ALPHADIF + ALPHADIF) % ALPHADIF;
+            c ^= (pref[ki]+suf[ki])%ALPHADIF;
+            c += ALPHAMIN;
+        }
+        content[i] = c;
+    }
+    writeto(dname, content);
+}
+
 void take_input(vector<string> &v){
     cout << "> ";
     string line,word="";
@@ -128,6 +159,11 @@ void process_input(){
                 if(fromv(v,4).empty()) return;
                 if(file_type(v[3]) != TXT || file_type(v[4]) != TXT) {throw_error("WRONG FILE TYPE"); return;}
                 writeto(v[0], readfrom(v[3])+readfrom(v[4]));
+            }
+            else if(v[2] == "encrypt" || v[2] == "decrypt"){
+                if(fromv(v,3).empty()) return;
+                if(file_type(v[3]) != TXT) {throw_error("WRONG FILE TYPE"); return;}
+                crypt(v[0],v[3],v[2]=="encrypt");
             }
             else throw_error("UNKNOWN COMMAND");
         }
